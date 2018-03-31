@@ -1,0 +1,190 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+I wanted to look into Apache Drill for some time and after several endorsements from [Bob Rudis](https://rud.is/b/) and his [announcement](https://rud.is/b/2017/07/17/ten-hut-the-apache-drill-r-interface-package-sergeant-is-now-on-cran/) that his R interface package [sergeant](https://github.com/hrbrmstr/sergeant) is now on CRAN there was no excuse for further procrastination. And I have to admit that it did not take long to convince me that this is an indispensable tool for any data worker. In this post I will look into Apache Drill in general and the R interface package `sergeant`.
+
+[Apache Drill](https://drill.apache.org/) is an open source distributed SQL query engine with roots in the [MapR](ecosystem). MapR summarizes the [benefits](https://mapr.com/products/apache-drill/) of Drill in 10 points (with some MapR bias but nontheless informative)
+
+* High Performance SQL Queries with Scale-Out Architecture
+    + Apache Drill can support thousands of users across thousands of nodes running queries on data that is in the terabyte and petabyte range.
+* Schemaless Query Execution for Data Exploration
+    + discover schemas on the fly and enable immediate exploration of data stored in MapR across a variety of data formats and sources.
+* In-Place Analytics across Historical and Operational Data
+    + No need to move data between operational and analytics clusters.
+* Connectivity to Popular BI Tools through QDBC and JDBC interfaces
+    + Connect with popular BI tools, such as Tableau, MicroStrategy, Qlik, and many more.
+* ANSI SQL Compliance
+    + All the SQL analytics functionality you would expect, such as aggregates, filters, sorting, sub-queries (scalar and correlated), create table/ view as, etc., is available out of the box.
+* Integration with MapR-DB Secondary Indexes for Operational Analytics
+    + Up to 10X query performance improvement due to native integration with MapR-DB, including secondary indexes.
+* Integration with Hive for Interactive Queries on Existing Hive Tables
+    + Continue querying existing Hive tables. No disruptions to existing BI workflows.
+* Cluster Health and Resource Monitoring through MapR Control System
+    + MCS gives you a single pane of glass for cluster metrics, alarms, and service logs as well as a curated user experience with streamlined workflows for common user actions.
+* Integration into MapR Data Science Refinery for Augmenting Data Science Workflows
+    + Direct integration into the MapR Data Science Refinery enables self-service data exploration for data scientists, leading to better models.
+* End-To-End Security for Data Accessed, Processed, and Analyzed
+    + Versatile authentication mechanisms–PAM, Kerberos, and MapR Security. State-of-the-art encryption to protect sensitive data with SSL and AES 256 GCM support.
+
+# Installation
+
+Apache Drill can be used in embedded mode (standalone machine) on Linux, Mac and Windows machines and in distributed mode on a cluster. You can build it from source or download compiled binaries. You don't necessarily need admin rights to run it but it has some system requirements that need to be in place, in particular the JDK and some environment variables. Detailed instructions can be found under [Installing Drill in Embedded Mode](https://drill.apache.org/docs/embedded-mode-prerequisites/). In general you will find an excellent documentation on the [Apache Foundation page](https://drill.apache.org/docs).
+
+# A quick introduction to Apache Drill
+
+Assuming you have installed Apache Drill in embedded mode on a single machine, let's try out some of the useful utilities it provides. First, we start Drill via the command line (in our case Bash on Linux but CMD on a Windows machine will be similar). We direct the console to the installation path subdirectory `/bin` and issue below command.
+
+```{bash}
+drill-embedded
+```
+
+Or on Windows.
+
+```{bash}
+sqlline.bat -u "jdbc:drill:zk=local"
+```
+
+![](D:/Sonstiges/screenshots/cmd_start_drill.png)
+
+The web application is hosted by default on `port 8047` so direct a browser of your choice to `http://localhost:8047/` to open it.
+
+![](~/screenshots/chrome_drill_startpage)
+
+If we want to interact with the file system, we may have to adjust a few configuration settings in the storage pane, in particular the following in `dfs`
+
+```{r, eval=FALSE}
+"tmp": {
+  "location": "~/data",
+  "writable": true,
+  "defaultInputFormat": null,
+  "allowAccessOutsideWorkspace": false
+},
+
+...
+
+"csv": {
+  "type": "text",
+  "extensions": [
+    "csv"
+  ],
+  "skipFirstLine": true,
+  "extractHeader": true,
+  "delimiter": ","
+},
+
+...
+```
+
+![](~/screenshots/chrome_drill_storage_config.png)
+
+edit the configuration of the storage 
+
+https://www.rittmanmead.com/blog/tag/apache-drill/
+https://blog.ouseful.info/2017/06/03/querying-large-csv-files-with-apache-drill/
+http://www.treselle.com/blog/drill-data-with-apache-drill-part-2/
+https://statcompute.wordpress.com/2017/12/17/query-csv-data-with-apache-drill/
+https://rud.is/b/2016/12/20/sergeant-a-r-boot-camp-for-apache-drill/
+https://blogs.technet.microsoft.com/machinelearning/2016/12/14/exploring-azure-data-with-apache-drill-now-part-of-the-microsoft-data-science-virtual-machine/
+https://gallery.cortanaintelligence.com/Tutorial/Data-Exploration-on-the-Data-Science-Virtual-Machine-using-Apache-Drill-1
+
+```{r}
+data("mtcars")
+readr::write_csv(mtcars, "~/data/other/mtcars.csv")
+str(mtcars)
+```
+
+We create a `parquet` file via Drill to demonstrate a multi-source query. We can test the files system connection via a simple select of a parquet file that ships with the Drill installation.
+
+```{sql}
+select
+  * 
+from
+  dfs.`home/triamus/apache-drill-1.13.0/sample-data/region.parquet`;
+```
+
+We create the parquet file.
+
+```{sql}
+create table
+  dfs.tmp.`/other/mtcars.parquet` 
+as select
+  * 
+from 
+  dfs.tmp.`/other/mtcars.csv`
+;
+```
+
+Finally, we perform the query.
+
+```{sql}
+select 
+  csv.cyl, 
+  csv.gear,
+  parquet.hp,
+  parquet.drat
+from 
+  dfs.tmp.`/other/mtcars.csv` as csv
+left join
+  dfs.tmp.`/other/mtcars.parquet` as parquet
+on
+  csv.mpg = parquet.mpg
+where
+  csv.gear = 4
+limit 5;
+```
+
+Rather than using the web query interface on an ad-hoc basis, we can connect to Drill with a Apache Zeppelin notebook using the JDBC driver. Assuming Zeppelin is installed and the JAVA_HOME variable is set, simply create a new interpreter in Zeppelin (in our example called `drill`) with reference to the 
+
+* default.driver: `org.apache.drill.jdbc.Driver`
+* default.url: `jdbc:drill:drillbit=localhost`
+* default.user: e.g. admin
+* zeppelin.interpreter.localRepo: e.g. /home/triamus/zeppelin-0.7.3-bin-all/local-repo/2DA2CF5MW
+* artifact (location of Drill JDBC driver): e.g. /home/triamus/apache-drill-1.13.0/jars/jdbc-driver/drill-jdbc-all-1.13.0.jar
+
+We show an example config below. For details on setting up a Zeppelin-Drill connection in embedded or distributed mode refer to the [documentation](https://drill.apache.org/docs/using-the-jdbc-driver/) and for troubleshooting, see e.g. [Apache Drill - connection to Drill in Embedded Mode](https://stackoverflow.com/questions/31654658/apache-drill-connection-to-drill-in-embedded-mode-java)
+
+![](~/screenshots/zeppelin_drill_interpreter_config.png)
+
+We run a short example query in the Zeppelin notebook such as `SELECT * from cp.`employee.json` LIMIT 3;`.
+
+![](~/screenshots/zeppelin_drill_example_query.png)
+
+## Sergeant
+
+```{r}
+library(sergeant)
+ds <- src_drill("localhost")  # use localhost if running standalone on same system otherwise the host or IP of your Drill server
+ds
+```
+
+```{r}
+packageVersion("sergeant")
+dc <- drill_connection("localhost") 
+drill_active(dc)
+drill_version(dc)
+drill_storage(dc)$name
+drill_query(dc, "SELECT * FROM cp.`employee.json` limit 100")
+drill_query(dc, "SELECT COUNT(gender) AS gender FROM cp.`employee.json` GROUP BY gender")
+drill_options(dc)
+drill_options(dc, "json")
+```
+
+
+## Drill vs Spark
+
+https://bigdatapath.wordpress.com/2018/03/10/apache-spark-vs-apache-drill/
+https://mapr.com/blog/apache-spark-vs-apache-drill/
+https://www.slideshare.net/HadoopSummit/spark-sql-versus-apache-drill-different-tools-with-different-rules
+https://www.linkedin.com/pulse/apache-spark-vs-drill-jim-scott
+https://www.dezyre.com/article/spark-sql-vs-apache-drill-war-of-the-sql-on-hadoop-tools/234
+https://www.smartdatacollective.com/apache-drill-vs-apache-spark-what-s-right-tool-job/
+https://www.quora.com/Which-is-more-efficient-Spark-over-Hadoop-or-Apache-Drill
+https://www.youtube.com/watch?v=PkRmLEi_wu4
+https://www.youtube.com/watch?v=Ud_adu9xNLI
+https://dzone.com/articles/apache-drill-vs-amazon-athena-a-comparison-on-data
+https://slamdata.com/news-and-blog/2016/07/20/battle-of-open-source-analytics-spark-vs-drill-vs-quasar/
+http://discuss.itversity.com/t/apache-drill-vs-sparksql/2429
