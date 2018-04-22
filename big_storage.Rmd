@@ -1,0 +1,18 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Cassandra
+
+[Docker Meet Cassandra. Cassandra Meet Docker.](http://thelastpickle.com/blog/2018/01/23/docker-meet-cassandra.html)
+
+[How to Install Apache Cassandra on Ubuntu 16.04](https://www.rosehosting.com/blog/how-to-install-apache-cassandra-on-ubuntu-16-04/)
+
+[DockerHub: Cassandra](https://hub.docker.com/_/cassandra/)
+
+
+# Postgres
+
+[DockerHub: Postgres](https://hub.docker.com/_/postgres/)
+

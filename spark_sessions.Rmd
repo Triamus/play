@@ -1,0 +1,100 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+# Install Spark
+
+* [Medium: Installing Scala and Spark on Ubuntu](https://medium.com/@josemarcialportilla/installing-scala-and-spark-on-ubuntu-5665ee4b62b1)
+* [Medium: Install Spark on Ubuntu (PySpark)](https://medium.com/@GalarnykMichael/install-spark-on-ubuntu-pyspark-231c45677de0)
+
+## download and extract
+
+```{bash}
+wget http://ftp.halifax.rwth-aachen.de/apache/spark/spark-2.3.0/spark-2.3.0-bin-hadoop2.7.tgz
+
+tar -zxvf spark-2.3.0-bin-hadoop2.7.tgz
+```
+
+## set environment/path variables
+
+We work with symbolic (soft) links which make it easier to switch to different verisons of a particular program without having to adjust the path variables every time. In our case, we create a symbolic link directory called `spark-current` which points to the Spark version we want to use as default (in our case `spark-2.3.0-bin-hadoop2.7`. Whenever we like to change the default Spark version, we only have to change the symbolic link rather than all dependencies such as path and home variables.
+
+We create a symbolic link as so
+
+```{bash}
+ln -s <real folder> <link folder>
+# in our case
+ln -s spark-2.3.0-bin-hadoop2.7 spark-current
+```
+
+You can check if the operation was successful by listing the directory contents via `ls -l` and the directory `spark-current` should display a right pointing arrow to its link directory, e.g. here `spark-2.3.0-bin-hadoop2.7`. If you were to swith into the `spark-current` directory you will actually be directed to its link reference. The same is true for any other operation pointing to the `spark-current` directory such as file operations, etc.
+
+Finally, we adjust our path within `.bashrc` by adding below (adjust for your actual paths).
+
+```{bash}
+export SPARK_HOME="/home/triamus/dstools/spark-current"
+export HADOOP_HOME="/home/triamus/dstools/spark-current/bin"
+export PATH="/home/triamus/dstools/spark-current/bin:$PATH"
+```
+
+To run PySpark from a Jupyter notebook, we also add the following.
+
+```{bash}
+function snotebook () 
+{
+#Spark path
+SPARK_PATH=/home/triamus/dstools/spark-current
+
+export PYSPARK_DRIVER_PYTHON="jupyter"
+export PYSPARK_DRIVER_PYTHON_OPTS="notebook"
+
+# For python 3 users, you have to add the line below or you will get an error 
+export PYSPARK_PYTHON=python3
+
+$SPARK_PATH/bin/pyspark --master local[4]
+}
+```
+
+# Install Anaconda
+
+* [How To Install the Anaconda Python Distribution on Ubuntu 16.04](https://www.digitalocean.com/community/tutorials/how-to-install-the-anaconda-python-distribution-on-ubuntu-16-04)
+
+In case not present, install Anaconda from the [official distribution](https://www.anaconda.com/download/). Restart the shell after the installation is done to make new path variables available.
+
+# Install Jupyter Lab
+
+* [Github: JupyterLab](https://github.com/jupyterlab/jupyterlab)
+
+We create a new conda environment to isolate any development (adjust libraries as you require). Jupyterlab comes with the Anaconda distribution. If you require a different version, you can run the last statement explicitly within the newly create environment.
+
+```{bash}
+conda env list
+conda create --name dspy36 python=3.6 anaconda python-blosc azure
+source activate dspy36
+conda install -c conda-forge jupyterlab 
+```
+
+We can launch JupyterLab by issuing below command in the created environment shell. It should automatically launch in your default browser.
+
+```{bash}
+jupyter lab
+```
+
+# Programming IDE for Spark
+
+There are many ways to program against Spark. We will use [Apache Zeppelin](https://zeppelin.apache.org/).
+
+Start it as follows. The notebook should then be exposed under `http://localhost:8080`.
+
+```{bash}
+bin/zeppelin-daemon.sh start
+```
+
+# Programming API for Spark
+
+* [Scala vs. Python for Apache Spark](https://dzone.com/articles/scala-vs-python-for-apache-spark)
+
+

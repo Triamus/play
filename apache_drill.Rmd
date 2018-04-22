@@ -154,6 +154,8 @@ We show an example config below. For details on setting up a Zeppelin-Drill conn
 
 We run a short example query in the Zeppelin notebook such as 
 ```{sql}
+%drill
+
 select
   * 
 from 
@@ -213,7 +215,7 @@ The workhorse function is `sergeant::drill_query()` which sends respective query
 
 We illustrate usage through a simple query with Drill's example files.
 
-```{r}
+```{sql}
 drill_query(
   dc, 
   "select
@@ -226,7 +228,7 @@ drill_query(
 
 To make a final point, we re-run the earlier Zeppelin query via sergeant.
 
-```{r}
+```{sql}
 drill_query(
   dc,
   "select 
@@ -260,21 +262,59 @@ http://spark.apache.org/docs/latest/sql-programming-guide.html
 * [MapR: Apache Spark vs. Apache Drill](https://mapr.com/blog/apache-spark-vs-apache-drill/)
 * [SlamData: Battle of Open Source Analytics: Spark vs Drill vs Quasar](https://slamdata.com/news-and-blog/2016/07/20/battle-of-open-source-analytics-spark-vs-drill-vs-quasar/)
 * [Dezyre: Spark SQL vs. Apache Drill-War of the SQL-on-Hadoop Tools](https://www.dezyre.com/article/spark-sql-vs-apache-drill-war-of-the-sql-on-hadoop-tools/234)
-
-In general Drill is a distributed high-performance full SQL engine while Spark is a distributed high-performance general computing engine with limited SQL support. In particular, one can find arguments such as (only applies to direct SQL capability/exceution comparison)
+So the question arises how Drill is different from Spark. In general Drill is a distributed high-performance full SQL engine while Spark is a distributed high-performance general computing engine with limited SQL support. In particular, one can find arguments such as (only applies to direct SQL capability/exceution comparison)
 
 * Drill supports full ANSI SQL:2003 while Spark SQL only supports a fraction
-* Drill supports special json operations such as `flatten`, Spark SQL some
+* Drill supports special json operations such as `flatten`, Spark SQL also added this now
 * Drill integrates with many BI tools
-* Spark SQL inputs have to be loaded into the session
+* Spark SQL inputs have to be loaded into the session, i.e. load time with many files will come into play
 * Spark SQL is embedded in another language e.g. Scala
 * Drill optimizer is more nuanced and thus performs better
-* Drill has lower memory usage (also no garbage collector)
+* Drill has lower memory usage (also no Java garbage collector)
 * Drill comes with more capable security model (e.g. via views)
 * Apache Arrow started as sub-project out of Drill
 * Drill can be integrated into Spark (e.g. via JDBC, DrillContext)
 * both allow user-defined functions
 
+The aim is not to provide any performance tests here but a naive guess is that once all data is in memory, Spark SQL shouldn't perform much worse than Drill (or even better?). What will likely pull down Spark performance are cases with many file reads as Drill executes directly on those while Spark loads them all into memory first. One comparison can be found in [Comparing SQL Functions and Performance with Apache Spark and Apache Drill](https://mapr.com/blog/comparing-sql-functions-and-performance-apache-spark-and-apache-drill/).
+
+Going back to our earlier example, a Spark SQL query would look something like below. First, we need to load the data into our session before we can access it.
+
+```{sql}
+%spark.sql
+
+-- mode "FAILFAST" will abort file parsing with a RuntimeException if any malformed lines are encountered
+CREATE TEMPORARY TABLE temp_mtcars_csv
+  USING csv
+  OPTIONS (path "/home/triamus/data/other/mtcars.csv", header "true", mode "FAILFAST")
+  
+CREATE TEMPORARY TABLE temp_mtcars_parquet
+  USING parquet
+  OPTIONS (path "/home/triamus/data/other/mtcars.parquet", header "true", mode "FAILFAST")
+```
+
+![](~/screenshots/chrome_zeppelin_sql_create_table.png)
+
+Now we can query it from memory.
+
+```{sql}
+%spark.sql
+
+select 
+     csv.cyl, 
+     csv.gear,
+     parquet.hp,
+     parquet.drat
+   from 
+     temp_mtcars_csv as csv
+   left join
+     temp_mtcars_parquet as parquet
+   on
+     csv.mpg = parquet.mpg
+   where
+     csv.gear = 4
+   limit 5
+```
 
 
 https://www.slideshare.net/HadoopSummit/spark-sql-versus-apache-drill-different-tools-with-different-rules
@@ -300,5 +340,16 @@ https://hortonworks.com/tutorial/learning-spark-sql-with-zeppelin/
 * [Tinkering With Apache Drill – JOINed Queries Across JSON and CSV files](https://blog.ouseful.info/2017/06/14/tinkering-with-apache-drill-joined-queries-across-json-and-csv-files/)
 * [Querying Large CSV Files With Apache Drill](https://blog.ouseful.info/2017/06/03/querying-large-csv-files-with-apache-drill/)
 * [How to combine relational and NoSQL datasets with Apache Drill](http://www.bigendiandata.com/2017-05-01-Apache_Drill/)
-* 
+* [Exploring Azure Data with Apache Drill, Now Pre-Installed on the Microsoft Data Science Virtual Machine](https://blogs.technet.microsoft.com/machinelearning/2016/12/14/exploring-azure-data-with-apache-drill-now-part-of-the-microsoft-data-science-virtual-machine/)
+* [Deploying Drill on MapR in the Azure Cloud (Part 1)](https://mapr.com/blog/deploying-drill-mapr-azure-cloud-part-1/)
+* [Connecting a Drill-enabled MapR Cluster to Azure Resources (Part 2)](https://mapr.com/blog/connecting-drill-enabled-mapr-cluster-azure-resources-part-2/)
+* [Connecting to Apache Drill with Power BI (Part 3)](https://mapr.com/blog/connecting-apache-drill-power-bi-part-3/)
+* [Third Eye: Apache Drill](https://thirdeyedata.io/apache-drill/)
+* [Using Apache Drill to Query Parliament Written Questions Data](https://github.com/psychemedia/parlihacks/blob/master/notebooks/Apache%20Drill%20-%20JSON%20Written%20Questions.ipynb)
+* [Accessing Apache Drill in Python](https://medium.com/@ApacheDrill/accessing-apache-drill-in-python-15482190d684)
+* [Different Ways Of Querying SQL To Hadoop](https://medium.com/@arogyalokeshvutukuru/different-ways-of-querying-sql-to-hadoop-fa0cb809afa0)
+* [10 things I wish someone had told me before I started using Apache SparkR](https://databricks-prod-cloudfront.cloud.databricks.com/public/4027ec902e239c93eaaa8714f173bcfc/8599738367597028/1792412399382575/3601578643761083/latest.html)
 
+# Drill on Azure
+
+* [Deploying Apache Drill on Azure](https://blogs.msdn.microsoft.com/data_otaku/2016/05/27/deploying-apache-drill-on-azure/)
