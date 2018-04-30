@@ -1,0 +1,54 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+screeshot_path <- "/home/triamus/screenshots/"
+```
+
+
+# Installation
+
+* [Linux Install](https://docs.dremio.com/quickstart/linux.html)
+
+```{bash}
+java -version
+
+wget https://download.dremio.com/community-server/2.0.1-201804132205050000-10b1de0/dremio-community-2.0.1-201804132205050000-10b1de0.tar.gz
+
+tar -xvzf dremio-community-2.0.1-201804132205050000-10b1de0.tar.gz
+
+# rename to sth friendly
+mv dremio-community-2.0.1-201804132205050000-10b1de0 dremio-community-2.0.1
+
+./bin/dremio start
+```
+
+![](/home/triamus/screenshots/bash_dremio_start.png)
+
+You can see the startup log via
+
+```{bash}
+tail log/server.out
+```
+
+![](/home/triamus/screenshots/bash_dremio_start_tail_log.png)
+
+You can now navigate to the Dremio UI at `http://localhost:9047`. You need to register an admin account and off you go.
+
+
+
+
+
+
+
+
+################################################################################
+
+* [Dremio Community](https://community.dremio.com/)
+
+
+

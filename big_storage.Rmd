@@ -3,6 +3,12 @@ title: "R Notebook"
 output: html_notebook
 ---
 
+# General Resources
+
+* [DigitalOcean: SQLite vs MySQL vs PostgreSQL: A Comparison Of Relational Database Management Systems](https://www.digitalocean.com/community/tutorials/sqlite-vs-mysql-vs-postgresql-a-comparison-of-relational-database-management-systems)
+
+* [DigitalOcean: A Comparison Of NoSQL Database Management Systems And Models](https://www.digitalocean.com/community/tutorials/a-comparison-of-nosql-database-management-systems-and-models)
+
 # Cassandra
 
 [Docker Meet Cassandra. Cassandra Meet Docker.](http://thelastpickle.com/blog/2018/01/23/docker-meet-cassandra.html)
@@ -14,5 +20,300 @@ output: html_notebook
 
 # Postgres
 
-[DockerHub: Postgres](https://hub.docker.com/_/postgres/)
+* [DockerHub: Postgres](https://hub.docker.com/_/postgres/)
+* [DigitalOcean: How To Install and Use PostgreSQL on Ubuntu 16.04](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-postgresql-on-ubuntu-16-04)
+* [Postgres Cheat Sheet](https://gist.github.com/Kartones/dd3ff5ec5ea238d4c546)
+
+```{bash}
+sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib
+# test installation
+service postgresql status
+# find host:port
+sudo netstat -plunt | grep postgres
+#> 127.0.0.1:5432
+# create password for user postgres
+sudo -u postgres psql postgres
+postgres=# \password postgres
+# list roles
+postgres=# \du
+# list databases
+postgres=# \list
+# show current directory (\! gives shell commands)
+postgres=# \! pwd
+```
+
+We create a new database to import a sql dump file. To avoid file permission issue, we create a new role with the same name as the Unix user performing the import task (assuming the Unix user has sufficient file permissions). We perform the action from the bahs shell rather than insinde the Postgres CLI.
+
+```{bash}
+# create database
+postgres=# create database db_name;
+# switch to new database
+postgres=# \connect db_name
+# grant all privileges on new database to user postgres
+db_name=# GRANT ALL PRIVILEGES ON DATABASE "db_name" to postgres;
+# create Postgres user with same name as Unix user
+postgres=# CREATE USER myuser WITH SUPERUSER;
+#postgres=# CREATE USER triamus WITH SUPERUSER;
+# finally import file from a bash shell
+psql databasename < data_base_dump
+# drop database
+drop database "db_name";
+```
+
+## Connect via RPostgres
+
+Explore the new database. We use `RPostgres` library.
+
+* [CRAN: RPostgres](https://cran.r-project.org/web/packages/RPostgres/index.html)
+
+```{r eval=FALSE}
+sudo apt-get install libpq-dev
+devtools::install_github("r-dbi/RPostgres")
+
+library(DBI)
+
+con_postgres <- 
+  DBI::dbConnect(
+    drv = RPostgres::Postgres(), 
+    dbname = "postgres", 
+    host = "localhost", 
+    port = 5432, 
+    user = "postgres", 
+    password=pw)
+```
+
+Issue some queries.
+
+```{r}
+DBI::dbGetQuery(
+  con_postgres,
+  "select * from db_name.table limit 10;"
+)
+```
+
+## Connect via ODBC
+
+In order to use odbc on Debian (Ubuntu) we first need to set up unixODBC.
+
+* [RStudio: Setting up ODBC Drivers](https://db.rstudio.com/best-practices/drivers/)
+
+```{bash}
+# Install the unixODBC library
+sudo apt-get install unixodbc unixodbc-dev --install-suggests
+
+# SQL Server ODBC Drivers (Free TDS)
+apt-get install tdsodbc
+  
+# PostgreSQL ODBC ODBC Drivers
+sudo apt-get install odbc-postgresql
+
+# SQLite ODBC Drivers
+sudo apt-get install libsqliteodbc
+```
+
+For MySQL the suggested RStudio solution does not work, so follow instructions as derived from [Stackoverflow: Installing Ubuntu 16.04 LTS: How to install ODBC?](https://askubuntu.com/questions/800216/installing-ubuntu-16-04-lts-how-to-install-odbc).
+
+```{bash}
+# MySQL ODBC Drivers
+#throws error
+#https://askubuntu.com/questions/800216/installing-ubuntu-16-04-lts-how-to-install-odbc
+sudo apt-get install libmyodbc
+#rather try what is specified in SO answer
+#download: mysql-connector-odbc-8.0.11-linux-ubuntu16.04-x86-64bit.tar.gz
+#https://dev.mysql.com/downloads/file/?id=477070
+tar -zxvf mysql-connector-odbc-8.0.11-linux-ubuntu16.04-x86-64bit.tar.gz
+sudo cp ./lib/libmyodbc8a.so /usr/lib/x86_64-linux-gnu/odbc/
+sudo cp ./lib/libmyodbc8S.so /usr/lib/x86_64-linux-gnu/odbc/
+sudo cp ./lib/libmyodbc8w.so /usr/lib/x86_64-linux-gnu/odbc/
+sudo gedit /etc/odbcinst.ini
+```
+
+Add the following for MySQL ODBC.
+
+```
+[MySQL ANSI]
+Description = MySQL ODBC driver (ANSI version)
+Driver = /usr/lib/x86_64-linux-gnu/odbc/libmyodbc8a.so
+Setup = /usr/lib/x86_64-linux-gnu/odbc/libodbcmy8S.so
+FileUsage = 1
+
+[MySQL Unicode]
+Description = MySQL ODBC driver (Unicode version)
+Driver = /usr/lib/x86_64-linux-gnu/odbc/libmyodbc8w.so
+Setup = /usr/lib/x86_64-linux-gnu/odbc/libodbcmy8S.so
+FileUsage = 1
+```
+
+and /etc/odbc.ini
+
+```
+[mysql-connector]
+Description           = MySQL connection to database
+Driver                = MySQL ANSI
+Database              = mydb
+Server                = localhost
+User	             = 
+Password              = 
+Port                  = 3306
+Socket                = /var/run/mysqld/mysqld.sock
+
+[PostgreSQL]
+Driver              = PostgreSQL Driver
+Database            = postgres
+Servername          = localhost
+UserName            = 
+Password            = 
+Port                = 5432
+
+[SQLite]
+Driver          = SQLite Driver
+Database=/tmp/testing
+```
+
+Get a GUI.
+
+* [TeamSQL](https://teamsql.io/)
+* [pgAdmin](https://www.pgadmin.org/)
+* [Docker pgAdmin](https://hub.docker.com/r/fenglc/pgadmin4/)
+
+# MySQL
+
+* [DigitalOcean: How To Install MySQL on Ubuntu 16.04](https://www.digitalocean.com/community/tutorials/how-to-install-mysql-on-ubuntu-16-04)
+* [Linode: Install and Configure MySQL Workbench on Ubuntu 16.04](https://www.linode.com/docs/databases/mysql/install-and-configure-mysql-workbench-on-ubuntu/)
+
+```{bash}
+sudo apt-get update && sudo apt upgrade
+sudo apt-get install mysql-server
+# set up secure installation
+mysql_secure_installation
+# test installation
+systemctl status mysql.service
+```
+
+```{bash}
+sudo apt update && sudo apt upgrade
+sudo apt install mysql-workbench
+# run
+mysql-workbench
+```
+
+
+# MongoDB
+
+* [DigitalOcean: How to Install MongoDB on Ubuntu 16.04](https://www.digitalocean.com/community/tutorials/how-to-install-mongodb-on-ubuntu-16-04)
+* [MongoDB Docs: Install MongoDB Community Edition on Ubuntu](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu)
+
+```{bash}
+# import official key
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv EA312927
+# add official repo
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
+# update package list
+sudo apt-get update
+# do actual install
+sudo apt-get install -y mongodb-org
+# start MongoDB with systemctl
+sudo systemctl start mongod
+#sudo service mongod start
+#sudo service mongod stop
+#sudo service mongod restart
+# check status
+sudo systemctl status mongod
+# make mongodb always start on system start
+#sudo systemctl enable mongod
+
+# start shell in default localhost
+mongo --host 127.0.0.1:27017
+# Print a list of all databases on the server.
+show dbs
+# Switch current database to <db>. The mongo shell variable db is set to the current database.
+```
+
+Work with Mongo Shell.
+
+* [Codecentric: MongoDB Cheatsheet](https://blog.codecentric.de/files/2012/12/MongoDB-CheatSheet-v1_0.pdf)
+* [GitHub aponxi: SQL to MongoDB Mapping Chart](https://gist.github.com/aponxi/4380516)
+* [MongoDB Docs: mongo Shell Quick Reference](https://docs.mongodb.com/manual/reference/mongo-shell/)
+
+We can create a new database from [Yelp Dataset Challenge](https://www.yelp.com/dataset/challenge) json dataset. Also see
+
+* [Kevin Hooke: Loading the Yelp dataset into MongoDB](https://www.kevinhooke.com/2017/10/24/loading-the-yelp-dataset-into-mongodb/)
+
+```{bash}
+# create new empty database (will only be visible after inserting at least one collection)
+> use yelp
+# general syntax for inserting collection
+$ mongoimport -d database -c collection importfile.json
+$ mongoimport -d yelp -c checkin checkin.json
+# now database yelp should be visible
+> show dbs
+# Print a list of all collections for current database
+> show collections
+# import the rest
+$ mongoimport -d yelp -c checkin checkin.json
+$ mongoimport -d yelp -c business business.json
+$ mongoimport -d yelp -c photos photos.json
+$ mongoimport -d yelp -c review review.json
+$ mongoimport -d yelp -c user user.json
+$ mongoimport -d yelp -c tip tip.json
+```
+
+Get a GUI.
+
+* [MongoDB Compass Community Edition](https://www.mongodb.com/download-center#compass)
+
+# SQLite
+
+```{bash}
+sudo apt-get install sqlite3
+```
+
+
+# Open Source BI Tool
+
+* [Pervasivecomputing: Superset vs Redash vs Metabase - Selecting Right Open Source BI Visualization Dashboard](https://www.pervasivecomputing.net/data-analytics/superset-vs-redash-vs-metabase)
+
+## Apache Superset
+
+* [Docs: Installation & Configuration](https://superset.incubator.apache.org/installation.html)
+
+* [Docker: amancevice/superset](https://hub.docker.com/r/amancevice/superset/)
+
+```{bash}
+sudo docker pull amancevice/superset
+```
+
+
+# Data Simulation
+
+* [StackOverflow: Is there any simulator/tool to generate messages for streaming?
+](https://stackoverflow.com/questions/40131580/is-there-any-simulator-tool-to-generate-messages-for-streaming)
+
+# Utilities
+
+## pdfgrep
+
+* [pdfgrep](https://pdfgrep.org/)
+
+```{bash}
+sudo apt-get install pdfgrep
+# ignore case and serach recursively with symlinks in all docs of directory
+pdfgrep -Ri keyword /some/directory
+# Prefix each match with the number of the page where it was found.
+pdfgrep -n keyword /some/directory
+# only give counts
+pdfgrep -c keyword file
+# Like -c, but prints the number of matches per page. Implies -n.
+pdfgrep -p keyword file
+# To search for a regular expression in multiple pdf files using pdfgrep:
+find /path -iname '*.pdf' -exec pdfgrep -H 'pattern' {} \;
+# Print the first ten lines matching pattern and print their page number:
+pdfgrep -n --max-count 10 pattern foo.pdf
+# Search all .pdf files whose names begin with foo recursively in the current directory:
+pdfgrep -r --include "foo*.pdf" pattern
+# Search all PDFs in the current directory for foo that also contain bar:
+pdfgrep -Z --files-with-matches "bar" *.pdf | xargs -0 pdfgrep -H foo
+```
+
 
