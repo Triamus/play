@@ -9,6 +9,30 @@ output: html_notebook
 
 * [DigitalOcean: A Comparison Of NoSQL Database Management Systems And Models](https://www.digitalocean.com/community/tutorials/a-comparison-of-nosql-database-management-systems-and-models)
 
+# Zeppelin
+
+## Authentication
+
+* [Apache Shiro authentication for Apache Zeppelin](https://zeppelin.apache.org/docs/0.7.3/security/shiroauthentication.html)
+
+Depending on the system and version, Zeppelin may require login authentication even though property `zeppelin.anonymous.allowed` in `conf/zeppelin-site.xml` is set to false and even if `conf/zeppelin-site.xml` does not exist. For a simple setup on a non-critical system, we can follow the [Apache Shiro authentication for Apache Zeppelin](https://zeppelin.apache.org/docs/0.7.3/security/shiroauthentication.html) guidance and create `conf/shiro.ini` as well as `conf/zeppelin-site.xml`. It turns out that Zepelin still expects a login, again, even though property `zeppelin.anonymous.allowed` in `conf/zeppelin-site.xml` is set to false.
+
+```{bash}
+cp conf/shiro.ini.template conf/shiro.ini
+cp conf/zeppelin-site.xml.template conf/zeppelin-site.xml
+```
+
+
+```{bash}
+bin/zeppelin-daemon.sh start
+# bin/zeppelin-daemon.sh stop
+# sudo service zeppelin start
+# sudo service zeppelin stop
+# sudo service zeppelin restart
+```
+
+http://localhost:8080
+
 # Cassandra
 
 [Docker Meet Cassandra. Cassandra Meet Docker.](http://thelastpickle.com/blog/2018/01/23/docker-meet-cassandra.html)
@@ -17,6 +41,13 @@ output: html_notebook
 
 [DockerHub: Cassandra](https://hub.docker.com/_/cassandra/)
 
+# Redis
+
+# Druid
+
+# InfluxDB
+
+# TimescaleDB
 
 # Postgres
 

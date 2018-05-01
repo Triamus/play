@@ -40,6 +40,7 @@ Assuming you have installed Apache Drill and running it in embedded mode on a si
 
 ```{bash}
 drill-embedded
+# exit the shell via !quit
 ```
 
 Or on Windows.
@@ -145,8 +146,8 @@ Rather than using the web query interface on an ad-hoc basis, we can connect to 
 * default.driver: `org.apache.drill.jdbc.Driver`
 * default.url: `jdbc:drill:drillbit=localhost`
 * default.user: e.g. admin
-* zeppelin.interpreter.localRepo: e.g. /home/triamus/zeppelin-0.7.3-bin-all/local-repo/2DA2CF5MW
-* artifact (location of Drill JDBC driver): e.g. /home/triamus/apache-drill-1.13.0/jars/jdbc-driver/drill-jdbc-all-1.13.0.jar
+* zeppelin.interpreter.localRepo: e.g. /home/triamus/dstools/zeppelin-0.7.3-bin-all/local-repo/2DA2CF5MW
+* artifact (location of Drill JDBC driver): e.g. /home/triamus/dstools/apache-drill-1.13.0/jars/jdbc-driver/drill-jdbc-all-1.13.0.jar
 
 We show an example config below. For details on setting up a Zeppelin-Drill connection in embedded or distributed mode refer to the [documentation](https://drill.apache.org/docs/using-the-jdbc-driver/) and for troubleshooting, see e.g. [Apache Drill - connection to Drill in Embedded Mode](https://stackoverflow.com/questions/31654658/apache-drill-connection-to-drill-in-embedded-mode-java). You may also consult [Generic JDBC Interpreter for Apache Zeppelin](https://zeppelin.apache.org/docs/0.6.1/interpreter/jdbc.html).
 
@@ -316,6 +317,70 @@ select
    limit 5
 ```
 
+# Drill to create Parquet files
+
+Assuming we have multiple csv of the same format that we like to append to one big csv and then convert to `parquet` format.
+
+```{bash}
+# pipe all headers into one file and inspect manually
+for file in $( ls ); do
+head -1 $file >> headers
+done
+# the same in one line
+for file in $( ls ); do head -1 $file >> headers; done
+rm headers
+# append via a shell script
+# https://stackoverflow.com/questions/24641948/merging-csv-files-appending-instead-of-merging/24643455
+#!/bin/bash
+OutFileName="On_Time_Performance_2014-2015.csv"   # Fix the output name
+i=0                                       # Reset a counter
+for filename in ./*.csv; do 
+ if [ "$filename"  != "$OutFileName" ] ;      # Avoid recursion 
+ then 
+   if [[ $i -eq 0 ]] ; then 
+      head -1  $filename >   $OutFileName # Copy header if it is the first file
+   fi
+   tail -n +2  $filename >>  $OutFileName # Append from the 2nd line each file
+   i=$(( $i + 1 ))                        # Increase the counter
+ fi
+done
+```
+
+We have one big csv with ~ 5.2 GB in size. From this, we create a parquet file.
+
+```{sql}
+%drill
+
+create table
+  dfs.data.`/blue_yonder_airlines/On_Time_Performance_2014-2015/On_Time_Performance_2014-2015.parquet` 
+as select
+  * 
+from 
+  dfs.data.`blue_yonder_airlines/On_Time_Performance_2014-2015/On_Time_On_Time_Performance_all.csv`
+```
+
+```{sql}
+%drill
+
+select
+  count(*)
+from
+  dfs.data.`/blue_yonder_airlines/On_Time_Performance_2014-2015/On_Time_Performance_2014-2015.parquet`
+```
+
+
+```{sql}
+drill_query(
+  dc, 
+  "create table
+  dfs.tmp.`/blue_yonder_airlines/On_Time_Performance_2014-2015.parquet` 
+as select
+  * 
+from 
+  dfs.tmp.`blue_yonder_airlines/On_Time_Performance_2014-2015/On_Time_On_Time_Performance_all.csv`")
+```
+
+* [The Server Side: Apache Drill case study: A tutorial on processing CSV files](https://www.theserverside.com/tutorial/Apache-Drill-case-study-A-tutorial-on-processing-CSV-files)
 
 https://www.slideshare.net/HadoopSummit/spark-sql-versus-apache-drill-different-tools-with-different-rules
 https://www.dezyre.com/article/spark-sql-vs-apache-drill-war-of-the-sql-on-hadoop-tools/234

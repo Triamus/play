@@ -5,6 +5,10 @@ editor_options:
   chunk_output_type: console
 ---
 
+* [jaceklaskowski: Mastering Apache Spark](https://legacy.gitbook.com/book/jaceklaskowski/mastering-apache-spark/details)
+
+* [Spark Docs: Spark Standalone Mode](https://spark.apache.org/docs/latest/spark-standalone.html)
+
 # Install Spark
 
 * [Medium: Installing Scala and Spark on Ubuntu](https://medium.com/@josemarcialportilla/installing-scala-and-spark-on-ubuntu-5665ee4b62b1)
@@ -28,6 +32,9 @@ We create a symbolic link as so
 ln -s <real folder> <link folder>
 # in our case
 ln -s spark-2.3.0-bin-hadoop2.7 spark-current
+# to switch existing symlink to another target, remove the directory symlink first recursively
+sudo rm -r spark-current
+ln -s spark-2.2.1-bin-hadoop2.7 spark-current
 ```
 
 You can check if the operation was successful by listing the directory contents via `ls -l` and the directory `spark-current` should display a right pointing arrow to its link directory, e.g. here `spark-2.3.0-bin-hadoop2.7`. If you were to swith into the `spark-current` directory you will actually be directed to its link reference. The same is true for any other operation pointing to the `spark-current` directory such as file operations, etc.
@@ -97,4 +104,8 @@ bin/zeppelin-daemon.sh start
 
 * [Scala vs. Python for Apache Spark](https://dzone.com/articles/scala-vs-python-for-apache-spark)
 
+```{bash}
+./spark-current/bin/spark-shell
+# to exit shell :q, :quit, sys.exit
+```
 

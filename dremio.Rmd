@@ -9,6 +9,7 @@ editor_options:
 screeshot_path <- "/home/triamus/screenshots/"
 ```
 
+* [Youtube Bock Corp: Introduction to Self-Service Data with Dremio](https://www.youtube.com/watch?v=iJOD7RcQoYI)
 
 # Installation
 
