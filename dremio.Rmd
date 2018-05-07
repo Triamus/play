@@ -25,8 +25,10 @@ tar -xvzf dremio-community-2.0.1-201804132205050000-10b1de0.tar.gz
 # rename to sth friendly
 mv dremio-community-2.0.1-201804132205050000-10b1de0 dremio-community-2.0.1
 
-./bin/dremio start
+sudo ./bin/dremio start
 ```
+
+Note that you may have to start as sudo depending on where you installed it and if Dremio has access to the subdirectories for data writing, logging, etc.
 
 ![](/home/triamus/screenshots/bash_dremio_start.png)
 
@@ -38,9 +40,52 @@ tail log/server.out
 
 ![](/home/triamus/screenshots/bash_dremio_start_tail_log.png)
 
-You can now navigate to the Dremio UI at `http://localhost:9047`. You need to register an admin account and off you go.
+You can now navigate to the Dremio UI at `http://localhost:9047`. You need to register an admin account and off you go. We use user triamus for illustration.
 
+Note that e.g. Apache Drill is using port `31010` so you may want to change Dremio's default port.
 
+```{bash}
+# see listening ports
+sudo netstat -tulpn | grep LISTEN
+```
+
+We find the port reference in [dremio.conf](https://docs.dremio.com/advanced-administration/configuration-files.html#reference-dremioconf), also refer to [Configuring Dremio](https://docs.dremio.com/deployment/dremio-config.html).
+
+We change the config to below.
+
+```{xml}
+paths: {
+  # the local path for dremio to store data.
+  local: ${DREMIO_HOME}"/data"
+
+  # the distributed path Dremio data including job results, downloads, uploads, etc
+  #dist: "pdfs://"${paths.local}"/pdfs"
+}
+
+services: {
+
+  coordinator: {
+    enabled: true,
+
+    # Auto-upgrade Dremio at startup if needed
+    auto-upgrade: false,
+
+    master: {
+      enabled: true,
+      # configure an embedded ZooKeeper server on the same node as master
+      embedded-zookeeper: {
+        enabled: true,
+        port: 2181,
+        path: ${paths.local}/zk
+      }
+    },
+
+    client-endpoint: {
+      port: 31050
+    }
+  }
+}
+```
 
 
 

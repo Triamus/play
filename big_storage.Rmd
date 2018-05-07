@@ -22,6 +22,16 @@ cp conf/shiro.ini.template conf/shiro.ini
 cp conf/zeppelin-site.xml.template conf/zeppelin-site.xml
 ```
 
+We stick with the defaults:
+
+```
+admin = password1, admin
+user1 = password2, role1, role2
+user2 = password3, role3
+user3 = password4, role2
+```
+
+We start Zeppelin as so.
 
 ```{bash}
 bin/zeppelin-daemon.sh start
@@ -31,7 +41,7 @@ bin/zeppelin-daemon.sh start
 # sudo service zeppelin restart
 ```
 
-http://localhost:8080
+The WebUI can be accessed at `http://localhost:8080`.
 
 # Cassandra
 
