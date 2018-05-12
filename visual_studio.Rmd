@@ -1,0 +1,129 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+# Install Visual Studio Code
+
+We download the .deb package from [Running VS Code on Linux](https://code.visualstudio.com/docs/setup/linux) (the exact file link is [Visual Studio Code .deb package (64-bit)](https://go.microsoft.com/fwlink/?LinkID=760868)). We run below from console.
+
+```{bash}
+sudo dpkg -i <file>.deb
+sudo apt-get install -f # Install dependencies
+```
+
+If you see an error when deleting files from the VS Code Explorer on the Debian operating system, it might be because the trash implementation that VS Code is using is not there.
+
+Run these commands to solve this issue:
+
+```{bash}
+sudo apt-get install gvfs-bin
+```
+
+## Node.js
+
+We also install node.js package manager as per guidance from [Installing Node.js via package manager](https://nodejs.org/en/download/package-manager/)
+
+```{bash}
+curl -sL https://deb.nodesource.com/setup_10.x | sudo -E bash -
+sudo apt-get install -y nodejs
+# install build tools
+sudo apt-get install -y build-essential
+```
+
+## .NET Core
+
+We find prerequisites for .NET Core on Linux in [Prerequisites for .NET Core on Linux](https://docs.microsoft.com/en-us/dotnet/core/linux-prerequisites?tabs=netcore2x). We install it following guidance on [Install .NET Core SDK on Linux Ubuntu 16.04](https://www.microsoft.com/net/download/linux-package-manager/ubuntu16-04/sdk-current).
+
+```{bash}
+wget -q packages-microsoft-prod.deb https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb
+sudo dpkg -i packages-microsoft-prod.deb
+# Update the products available for installation, then install the .NET SDK.
+sudo apt-get install apt-transport-https
+sudo apt-get update
+sudo apt-get install dotnet-sdk-2.1.200
+```
+
+## Extensions (optional)
+
+We install a few extensions.
+
+* [C#](https://code.visualstudio.com/docs/languages/csharp)
+* [Python](https://code.visualstudio.com/docs/languages/python)
+* [C/C++](https://code.visualstudio.com/docs/languages/cpp)
+* [Java Extension Pack](https://code.visualstudio.com/docs/languages/java)
+* [Docker](https://marketplace.visualstudio.com/items?itemName=PeterJausovec.vscode-docker)
+* [Azure IoT Toolkit](https://marketplace.visualstudio.com/items?itemName=vsciot-vscode.azure-iot-toolkit)
+* [Azure IoT Edge](https://marketplace.visualstudio.com/items?itemName=vsciot-vscode.azure-iot-edge)
+* [Azure Functions for Visual Studio Code](https://code.visualstudio.com/tutorials/functions-extension/getting-started)
+* [Code Runner](https://marketplace.visualstudio.com/items?itemName=formulahendry.code-runner)
+* [MySQL Management Tools](https://marketplace.visualstudio.com/items?itemName=formulahendry.vscode-mysql)
+* [Docker Explorer](https://marketplace.visualstudio.com/items?itemName=formulahendry.docker-explorer)
+* [Azure Storage Explorer](https://marketplace.visualstudio.com/items?itemName=formulahendry.azure-storage-explorer)
+
+Note that C# development requires Node.js and NPM installs.
+
+## Using .NET Core in Visual Studio Code
+
+* [Using .NET Core in Visual Studio Code](https://code.visualstudio.com/docs/other/dotnet)
+
+# .Net Core on Raspberry
+
+* [MSDN: Setting up Raspian and .NET Core 2.0 on a Raspberry Pi](https://blogs.msdn.microsoft.com/david/2017/07/20/setting_up_raspian_and_dotnet_core_2_0_on_a_raspberry_pi/)
+
+* [Github: .NET Core on Raspberry Pi](https://github.com/dotnet/core/blob/master/samples/RaspberryPiInstructions.md)
+
+* [alexellis: Build .NET Core apps for Raspberry Pi with Docker](https://blog.alexellis.io/dotnetcore-on-raspberrypi/)
+
+* [Michael Dimoudis: IoT in .NET with a Raspberry Pi, Azure IoT Hub, and Xamarin](https://medium.com/@dimoss/iot-in-net-with-a-raspberry-pi-azure-iot-hub-and-xamarin-3bf1cfb2514f)
+
+SSH into Pi
+
+```{bash}
+ssh pi@192.168.178.38
+```
+
+Check if latest firmware is applied.
+
+```{bash}
+sudo apt-get install rpi-update && echo Y | sudo rpi-update
+```
+
+Install .Net Core on the RPi.
+
+```{bash}
+# Install the packages necessary for .NET Core
+sudo apt-get -y install libunwind8 gettext
+
+# Download the nightly binaries for .NET Core 2
+wget https://dotnetcli.blob.core.windows.net/dotnet/Runtime/release/2.0.0/dotnet-runtime-latest-linux-arm.tar.gz
+
+# Create a folder to hold the .NET Core 2 installation
+sudo mkdir /opt/dotnet
+
+# Unzip the dotnet zip into the dotnet installation folder
+sudo tar -xvf dotnet-runtime-latest-linux-arm.tar.gz -C /opt/dotnet
+
+# set up a symbolic link to a directory on the path so we can call dotnet
+sudo ln -s /opt/dotnet/dotnet /usr/local/bin
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
