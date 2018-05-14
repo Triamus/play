@@ -81,6 +81,8 @@ Note that C# development requires Node.js and NPM installs.
 
 SSH into Pi
 
+* [StackExchange: How to achieve multiple independent sessions into a Raspbian Pi3](https://raspberrypi.stackexchange.com/questions/68464/how-to-achieve-multiple-independent-sessions-into-a-raspbian-pi3)
+
 ```{bash}
 ssh pi@192.168.178.38
 ```
@@ -108,22 +110,114 @@ sudo tar -xvf dotnet-runtime-latest-linux-arm.tar.gz -C /opt/dotnet
 
 # set up a symbolic link to a directory on the path so we can call dotnet
 sudo ln -s /opt/dotnet/dotnet /usr/local/bin
-
 ```
 
+Install wiringpi.
 
+```{bash}
+sudo apt-get install wiringpi
+```
 
+In order to set system locale (in case not already done - usually leads to console errors such as `perl: warning: Setting locale failed.`), go to the Raspberry Pi config and update locale and timezone settings. Once all done, then sudo reboot.
 
+```{bash}
+sudo raspi-config
+sudo reboot
+```
 
+Test the .Net Core installation.
 
+```{bash}
+dotnet --info
+```
 
+On your development machine, install the Raspberry Pi C# template.
 
+```{bash}
+dotnet new -i RaspberryPi.Template::*
+```
 
+This will create a new template available to dotnet core – you can list them all with a new template called `Empty .NET Core IoT Project`.
 
+```{bash}
+dotnet new --list
+```
 
+Create a new console application using this template.
 
+```{bash}
+dotnet new coreiot -n HelloRaspbian
+```
 
+## Install Cake
 
+* [Cake Docs: Getting Started](https://cakebuild.net/docs/tutorials/getting-started)
+
+Before installing Cake, install [Mono](http://www.mono-project.com/) which will be required for builds on Linux.
+
+```{bash}
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+sudo apt install apt-transport-https
+echo "deb https://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+sudo apt update
+sudo apt install mono-devel -y
+# check install
+mono --version
+```
+
+We get cake install files.
+
+```{bash}
+curl -Lsfo build.sh https://cakebuild.net/download/bootstrapper/linux
+```
+
+The project director should now look something like below (note that project was opened in VS Code and dependencies installed by VS Code upon opening prompt)
+
+```
+[HelloRaspbian]$ ls -al
+total 88
+drwxrwxr-x 4 triamus triamus 4096 Mai 13 22:21 .
+drwxrwxr-x 4 triamus triamus 4096 Mai 13 22:20 ..
+drwxrwxr-x 3 triamus triamus 4096 Mai 13 22:20 bin
+-rw-rw-r-- 1 triamus triamus  623 Mai 13 01:40 build.cake
+-rwxrwxr-x 1 triamus triamus 3210 Mai 13 00:49 build.sh
+-rw-rw-r-- 1 triamus triamus  264 Mai 13 00:32 HelloRaspbian.csproj
+-rw-rw-r-- 1 triamus triamus  212 Mai 13 00:32 NuGet.config
+drwxrwxr-x 3 triamus triamus 4096 Mai 13 22:21 obj
+-rw-rw-r-- 1 triamus triamus  208 Mai 13 00:32 Program.cs
+-rw-rw-r-- 1 triamus triamus  386 Mai 13 00:32 README.txt
+```
+
+Now, open the `build.cake` file and you’ll see some defaults at the top of the file. Adjust where necessary (keep all other lines untouched). The directory has already been created on the RPi via `mkdir -p /home/pi/DotNetConsoleApps/RaspbianTest`. The adjusted part looks as follows.
+
+```
+///////////////////////////////////////////////////////////////////////
+// ARGUMENTS (WITH DEFAULT PARAMETERS FOR LINUX (Ubuntu 16.04, Raspbian Jessie, etc)
+///////////////////////////////////////////////////////////////////////
+var runtime = Argument("runtime", "linux-arm");
+var destinationIp = Argument("destinationPi", "192.168.178.38");
+var destinationDirectory = Argument("destinationDirectory", @"/home/pi/DotNetConsoleApps/RaspbianTest");
+var username = Argument("username", "pi");
+//var sessionname = Argument("sessionname", "<<your-saved-putty-sessionname>");
+var executableName = Argument("executableName", "HelloRaspbian");
+```
+
+Deploy this application to your Pi running Raspbian using Cake. The script will detect that you don't have Cake and automatically download it from NuGet.
+
+```{bash}
+chmod +x ./build.sh
+./build.sh
+```
+
+To test the deployment execute below from the RPi.
+
+```{bash}
+./DotNetConsoleApps/RaspbianTest/HelloRaspbian
+```
+
+https://github.com/jeremylindsayni/RaspberryPi.Cake.Template/blob/master/build.cake
+
+https://github.com/michaeldimoudis/raspberrypi-xamarin-iot/blob/master/rpi/build.cake
 
 
 
