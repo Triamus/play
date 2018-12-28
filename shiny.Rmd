@@ -1,0 +1,155 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+# shinyproxy
+
+* [shinyproxy.io](https://www.shinyproxy.io/)
+* [How to Use Shiny Containers with Shinyproxy](https://lukesingham.com/shiny-containers-with-shinyproxy/)
+
+* [ShinyProxy in a Container](https://www.shinyproxy.io/shinyproxy-containers/)
+* [ShinyProxy Configuration Examples](https://github.com/openanalytics/shinyproxy-config-examples)
+
+## Configuration
+
+In an Ubuntu 16.04 LTS system (or a similar system that uses systemd) this can be set in the /lib/systemd/system/docker.service file as follows:
+
+```{bash eval=FALSE}
+ExecStart=/usr/bin/dockerd -H fd:// -D -H tcp://127.0.0.1:2375
+```
+
+To reload the configuration and restart docker use.
+
+```{bash eval=FALSE}
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+## Running ShinyProxy
+
+Download latest shinyproxy jar. 
+
+```{bash eval=FALSE}
+docker pull openanalytics/shinyproxy-demo
+# check if it's there
+docker images | grep shinyproxy
+docker run -d 3e1ed22d7bb5
+```
+
+Download latest shinyproxy jar. 
+
+```{bash eval=FALSE}
+java -jar shinyproxy-1.1.1.jar
+# print html output to console
+curl http://localhost:8080
+```
+
+Alternatively build from source via Maven.
+
+```{bash eval=FALSE}
+git clone git@github.com:openanalytics/shinyproxy.git
+cd shinyproxy
+# build with maven
+mvn -U clean install
+```
+
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 03:49 min
+[INFO] Finished at: 2018-06-16T20:18:26+02:00
+[INFO] Final Memory: 54M/615M
+[INFO] ------------------------------------------------------------------------
+
+```{bash eval=FALSE}
+cd target
+java -jar shinyproxy-1.1.1.jar
+```
+
+Login can be found on Github page [here](https://github.com/openanalytics/shinyproxy).
+
+## Example: standalone ShinyProxy with a docker engine
+
+* [Example: standalone ShinyProxy with a docker engine](https://github.com/openanalytics/shinyproxy-config-examples/tree/master/01-standalone-docker-engine)
+
+```{bash eval=FALSE}
+git clone git@github.com:openanalytics/shinyproxy-config-examples.git
+cd shinyproxy-config-examples/01-standalone-docker-engine
+java -jar shinyproxy-1.1.1.jar
+```
+
+http://localhost:8080/login
+
+## Example: containerized ShinyProxy with a docker engine
+
+* [Example: containerized ShinyProxy with a docker engine](https://github.com/openanalytics/shinyproxy-config-examples/tree/master/02-containerized-docker-engine)
+
+```{bash eval=FALSE}
+git clone git@github.com:openanalytics/shinyproxy-config-examples.git
+cd shinyproxy-config-examples/02-standalone-docker-engine
+docker network create sp-example-net
+docker build . -t shinyproxy-example
+docker run -d -v /var/run/docker.sock:/var/run/docker.sock --net sp-example-net -p 8080:8080 shinyproxy-example
+```
+
+Stop all Docker containers.
+
+```{bash eval=FALSE}
+docker stop $(docker ps -a -q)
+```
+
+
+
+
+## Deploying apps
+
+Starting the hello app manually and navigate to http://localhost:3838/.
+
+```{bash eval=FALSE}
+sudo docker run -p 3838:3838 openanalytics/shinyproxy-demo R -e 'shinyproxy::run_01_hello()'
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```

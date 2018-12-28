@@ -25,6 +25,49 @@ docker container ls --all
 docker container ls -aq
 ```
 
+# Installation
+
+## Configuration
+
+* [Docker Docs: Post-installation steps for Linux](https://docs.docker.com/install/linux/linux-postinstall/)
+
+### Manage Docker as a non-root user
+
+```{bash eval=FALSE}
+# Create the docker group.
+$ sudo groupadd docker
+# Add your user to the docker group.
+$ sudo usermod -aG docker $USER
+```
+
+Log out and log back in so that your group membership is re-evaluated.
+If testing on a virtual machine, it may be necessary to restart the virtual machine for changes to take effect.
+
+On a desktop Linux environment such as X Windows, log out of your session completely and then log back in.
+
+Verify that you can run docker commands without sudo.
+
+```{bash eval=FALSE}
+$ docker run hello-world
+```
+
+In certain cases you may get a [WARNING: Error loading config file: /home/user/.docker/config.json -
+stat /home/user/.docker/config.json: permission denied](https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user) which indicates your user does not have sufficent rights on the docker config file. To adjust run below.
+
+```{bash eval=FALSE}
+sudo chown "$USER":"$USER" /home/"$USER"/.docker -R
+sudo chmod g+rwx "/home/$USER/.docker" -R
+```
+
+### Configure Docker to start on boot
+
+```{bash eval=FALSE}
+$ sudo systemctl enable docker
+# To disable this behavior, use disable instead.
+$ sudo systemctl disable docker
+```
+
+
 # Docker Get Started
 
 * [Docker Docs: Get Started](https://docs.docker.com/get-started/)
@@ -266,8 +309,417 @@ docker stack rm <appname>                             # Tear down an application
 docker swarm leave --force      # Take down a single node swarm from the manager
 ```
 
+# Quickstart: Run the SQL Server 2017 container image with Docker
 
+* [Quickstart: Run the SQL Server 2017 container image with Docker](https://docs.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker?view=sql-server-linux-2017)
 
+Download the image.
 
+```{bash, eval=FALSE}
+sudo docker pull microsoft/mssql-server-linux:2017-latest
+```
+
+Run the container.
+
+```{bash, eval=FALSE}
+# with name
+sudo docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=<your_pw>' \
+   -p 1433:1433 --name sql1 \
+   -d microsoft/mssql-server-linux:2017-latest
+```
+
+```{bash, eval=FALSE}
+docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=yourStrong(!)Password' -p 1433:1433 -d microsoft/mssql-server-linux:2017-latest
+```
+
+Check if it's running.
+
+```{bash, eval=FALSE}
+docker container list
+```
+
+## Connect to SQL Server
+
+Use the docker exec -it command to start an interactive bash shell inside your running container. In the following example sql1 is name specified by the --name parameter when you created the container.
+
+```{bash, eval=FALSE}
+sudo docker exec -it sql1 "bash"
+```
+
+Once inside the container, connect locally with sqlcmd. Sqlcmd is not in the path by default, so you have to specify the full path.
+
+```{bash, eval=FALSE}
+/opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P '<your_pw>'
+```
+
+## Create and query data
+
+```{sql, eval=FALSE}
+create database TestDB
+select name from sys.databases
+```
+
+The previous two commands were not executed immediately. You must type GO on a new line to execute the previous commands:
+
+```{sql, eval=FALSE}
+go
+```
+
+Next create a new table, Inventory, and insert two new rows.
+
+From the sqlcmd command prompt, switch context to the new TestDB database.
+Create new table named Inventory.
+Insert data into the new table.
+Type GO to execute the previous commands.
+
+```{sql, eval=FALSE}
+use TestDB
+CREATE TABLE Inventory (id INT, name NVARCHAR(50), quantity INT)
+INSERT INTO Inventory VALUES (1, 'banana', 150); INSERT INTO Inventory VALUES (2, 'orange', 154);
+go
+```
+
+Now, run a query to return data from the Inventory table. From the sqlcmd command prompt, enter a query that returns rows from the Inventory table where the quantity is greater than 152:
+
+```{sql, eval=FALSE}
+SELECT * FROM Inventory WHERE quantity > 152;
+go
+```
+
+Exit the sqlcmd command prompt.
+
+```{sql, eval=FALSE}
+quit
+```
+
+## Connect from outside the container
+
+The following steps use sqlcmd outside of your container to connect to SQL Server running in the container. These steps assume that you already have the SQL Server command-line tools installed outside of your container. The same principals apply when using other tools, but the process of connecting is unique to each tool.
+
+Find the IP address for the machine that hosts your container. On Linux, use ifconfig or ip addr. On Windows, use ipconfig.
+
+Run sqlcmd specifying the IP address and the port mapped to port 1433 in your container. In this example, that is the same port, 1433, on the host machine. If you specified a different mapped port on the host machine, you would use it here.
+
+ifconfig and ip addr are not installed on container so get it via net-tools.
+
+```{bash, eval=FALSE}
+# will fail
+docker exec -it thirsty_allen ip addr
+# open bash in container
+docker exec -it thirsty_allen /bin/bash
+# won't work (package index?)
+apt-get install net-tools
+# alternaticvely from host
+docker inspect <container_name or container_id>
+```
+
+We get "IPAddress": "172.17.0.2".
+
+```{bash, eval=FALSE}
+sqlcmd -S 172.17.0.2,1433 -U SA -P '<YourNewStrong!Passw0rd>'
+```
+
+## Remove your container
+
+```{sql, eval=FALSE}
+sudo docker stop container_name
+sudo docker rm container_name
+```
+
+```{sql, eval=FALSE}
+
+```
+
+```{sql, eval=FALSE}
+
+```
+
+# Rocker
+
+* [dockerfiler is now on CRAN](https://colinfay.me/dockerfiler-cran/)
+* [R on Kubernetes - serverless Shiny, R APIs and scheduled scripts](http://code.markedmondson.me/r-on-kubernetes-serverless-shiny-r-apis-and-scheduled-scripts/)
+* []()
+
+# Learn Kubernetes in Under 3 Hours: A Detailed Guide to Orchestrating Containers
+
+Get the Git repo.
+
+```{bash eval=FALSE}
+git clone git@github.com:rinormaloku/k8s-mastery.git
+# install frontend dependencies
+[sa-frontend](master)$ npm install
+# run the frontend app
+npm start
+# build the React application
+npm run build
+```
+
+Install Nginx. See instructions at [DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-ubuntu-16-04).
+
+```{bash eval=FALSE}
+sudo apt-get update
+sudo apt-get install nginx -y
+# get version
+nginx -v
+# adjust firewall
+
+```
+
+Move frontend build directory contents to nginx default serve directory (in our case: `/var/www/html/`).
+
+```{bash eval=FALSE}
+# find install dir
+whereis nginx
+# > /usr/share/nginx
+sudo cp -rf . /var/www/html/
+```
+
+You may have to restart nginx (`service nginx restart`) and point your browser to lovalhost:80 (nginx default port).
+
+Navigate in your Terminal to the directory sa-webapp and type the following command:
+
+```{bash eval=FALSE}
+mvn install
+```
+
+This will generate a folder named target, in the directory sa-webapp. In the folder target we have our Java application packaged as a jar: ‘sentiment-analysis-web-0.0.1-SNAPSHOT.jar’
+
+Starting our Java Application
+Navigate to the target directory and start the application with the command:
+
+```{bash eval=FALSE}
+java -jar sentiment-analysis-web-0.0.1-SNAPSHOT.jar
+```
+
+Will give error. The important information here is the placeholder sa.logic.api.url in the SentimentController. Let’s check that out! To make things simpler let’s decide that we will run the python application on localhost:5000. Lets just not forget it!
+
+Run the below command and we are ready to move to the last service the python application.
+
+```{bash eval=FALSE}
+java -jar sentiment-analysis-web-0.0.1-SNAPSHOT.jar \
+     --sa.logic.api.url=http://localhost:5000
+```
+
+Setting up the Python Application
+To start the Python application, we need to have Python3 and Pip installed. (Their environment variables need to be set up as well).
+
+Installing Dependencies
+Navigate in the Terminal to the directory sa-logic/sa (repo) and type the following command:
+
+```{bash eval=FALSE}
+python -m pip install -r requirements.txt
+python -m textblob.download_corpora
+python sentiment_analysis.py
+```
+
+Building the Docker image. You need an account on DocherHub. After completing the above tasks navigate to the directory sa-frontend. Then execute the below command (replace $DOCKER_USER_ID with your docker hub username. For e.g. rinormaloku/sentiment-analysis-frontend)
+
+```{bash eval=FALSE}
+docker build -f Dockerfile -t triamus/sentiment-analysis-frontend .
+# To push the image, use the docker push command:
+docker push triamus/sentiment-analysis-frontend
+```
+
+Now the image in $DOCKER_USER_ID/sentiment-analysis-frontend can be pulled and run by anyone:
+
+```{bash eval=FALSE}
+docker pull triamus/sentiment-analysis-frontend
+# you may have to stop nginx
+sudo service nginx start
+sudo service nginx stop
+sudo service nginx restart
+# run container
+docker run -d -p 80:80 triamus/sentiment-analysis-frontend
+```
+
+Building the container image for the Java Application. Build the webapp in respective directory.
+
+```{bash eval=FALSE}
+docker build -f Dockerfile -t triamus/sentiment-analysis-web-app .
+docker push triamus/sentiment-analysis-web-app
+```
+
+Build and push Python app (sa-logic directory).
+
+```{bash eval=FALSE}
+docker build -f Dockerfile -t triamus/sentiment-analysis-logic .
+docker push triamus/sentiment-analysis-logic
+```
+
+Get container ip address.
+
+```{bash eval=FALSE}
+# get container id
+docker container ls
+# get ip address
+docker inspect 143409be3386 | grep "IPAddress"
+# > 172.17.0.2
+```
+
+Run the webapp container following patter `docker run -d -p 8080:8080 -e SA_LOGIC_API_URL='http://<container_ip or docker machine ip>:5000' $DOCKER_USER_ID/sentiment-analysis-web-app`.
+
+Attention: If you changed the port for the sa-webapp, or if you are using docker-machine ip, you need to update App.js file in sa-frontend in the method analyzeSentence to fetch from the new IP or Port. Afterwards you need to build, and use the updated image.
+
+```{bash eval=FALSE}
+docker run -d -p 8080:8080 -e SA_LOGIC_API_URL='http://172.17.0.2:5000' triamus/sentiment-analysis-web-app
+```
+
+Run the logic app.
+
+```{bash eval=FALSE}
+docker run -d -p 5050:5000 triamus/sentiment-analysis-logic
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
+
+```{bash eval=FALSE}
+
+```
 
 

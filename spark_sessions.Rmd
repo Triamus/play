@@ -5,9 +5,15 @@ editor_options:
   chunk_output_type: console
 ---
 
-* [jaceklaskowski: Mastering Apache Spark](https://legacy.gitbook.com/book/jaceklaskowski/mastering-apache-spark/details)
+- [jaceklaskowski: Mastering Apache Spark](https://legacy.gitbook.com/book/jaceklaskowski/mastering-apache-spark/details)
+- [Spark Docs: Spark Standalone Mode](https://spark.apache.org/docs/latest/spark-standalone.html)
+- [How to set up PySpark for your Jupyter notebook](https://medium.freecodecamp.org/how-to-set-up-pyspark-for-your-jupyter-notebook-7399dd3cb389)
+- [Setting up a scalable data exploration environment with Spark and Jupyter Lab](https://becominghuman.ai/setting-up-a-scalable-data-exploration-environment-with-spark-and-jupyter-lab-22dbe7046269)
+- []()
+- []()
+- []()
+- []()
 
-* [Spark Docs: Spark Standalone Mode](https://spark.apache.org/docs/latest/spark-standalone.html)
 
 # Install Spark
 
@@ -47,22 +53,36 @@ export HADOOP_HOME="/home/triamus/dstools/spark-current/bin"
 export PATH="/home/triamus/dstools/spark-current/bin:$PATH"
 ```
 
-To run PySpark from a Jupyter notebook, we also add the following.
+To run PySpark from a Jupyter notebook (`"notebook"`) or from Jupyter Lab (`"lab"`), we also add the following (Note that this will depend on the python environment you choose to work with pyspark. If you are not leveraging virtual Python environments at all, simply use the default Python).
 
 ```{bash}
-function snotebook () 
+function sparklab () 
 {
 #Spark path
-SPARK_PATH=/home/triamus/dstools/spark-current
+SPARK_PATH="/home/triamus/dstools/spark-current"
 
-export PYSPARK_DRIVER_PYTHON="jupyter"
-export PYSPARK_DRIVER_PYTHON_OPTS="notebook"
+# when using a specific environment
+export PYSPARK_DRIVER_PYTHON="$ANACONDA_ROOT/envs/dspy36/bin/jupyter"
+export PYSPARK_PYTHON="$ANACONDA_ROOT/envs/dspy36/bin/python"
+export PYSPARK_DRIVER_PYTHON_OPTS="lab"
+#export PYSPARK_DRIVER_PYTHON_OPTS="notebook"
 
-# For python 3 users, you have to add the line below or you will get an error 
-export PYSPARK_PYTHON=python3
+# when using python3 default
+#export PYSPARK_PYTHON=python3
+#export PYSPARK_DRIVER_PYTHON="jupyter"
+#export PYSPARK_DRIVER_PYTHON_OPTS="lab"
+#export PYSPARK_DRIVER_PYTHON_OPTS="notebook"
 
+# starting pyspark with defined number of cores
 $SPARK_PATH/bin/pyspark --master local[4]
 }
+```
+
+Running PySpark should now automatically open in a Jupyter notebook.
+
+```{bash}
+pyspark
+#exit()
 ```
 
 # Install Anaconda
@@ -75,20 +95,56 @@ In case not present, install Anaconda from the [official distribution](https://w
 
 * [Github: JupyterLab](https://github.com/jupyterlab/jupyterlab)
 
-We create a new conda environment to isolate any development (adjust libraries as you require). Jupyterlab comes with the Anaconda distribution. If you require a different version, you can run the last statement explicitly within the newly create environment.
+We create a new conda [environment](https://docs.anaconda.com/ae-notebooks/user-guide/adv-tasks/work-with-environments/) to isolate any development (adjust libraries as you require). Jupyterlab comes with the Anaconda distribution. If you require a different version, you can run the last statement explicitly within the newly created environment.
 
 ```{bash}
 conda env list
+# this will be a big install so it may take some time
 conda create --name dspy36 python=3.6 anaconda python-blosc azure
+# on linux, macos activate the environment
 source activate dspy36
-conda install -c conda-forge jupyterlab 
+# in case jupyterlab is not already part of the distribution, install it manually
+conda install -c conda-forge jupyterlab
+# to allow switching Python virtual environments, also install nb_conda in case it's not present
+conda install nb_conda
+# we also install findspark to find a Spark cluster from within our jupyter session
+conda install -c conda-forge findspark
 ```
 
-We can launch JupyterLab by issuing below command in the created environment shell. It should automatically launch in your default browser.
+We can launch Jupyter by issuing below command in the created environment shell. It should automatically launch in your default browser.
 
 ```{bash}
 jupyter lab
+#jupyter notebook
 ```
+
+However, to actually use our created environment with all associated variables, we make use of our created Bash function that we defined in `.bashrc`.
+
+```{bash}
+sparklab
+```
+
+JupyterLab should open in your browser with the correct environment running. If you installed `nb_conda` you should also be able to switch environments from within JupyterLab or create a new notebook from an environment of your choice.
+
+To avoid confusion, you may change the name of shown environment in the notebook/lab from only `Python` to `Python (myenv)` as so (from command line).
+
+```{bash}
+source activate myenv 
+python -m ipykernel install --user --name myenv --display-name "Python (myenv)"
+```
+
+The selection in Jupyter should now show the full name.
+
+## try later - didnt work
+
+[GitHub: jupyter-incubator/sparkmagic](https://github.com/jupyter-incubator/sparkmagic)
+
+```{bash}
+# install will have a few dependencies
+conda install -c conda-forge sparkmagic
+
+```
+
 
 # Programming IDE for Spark
 
